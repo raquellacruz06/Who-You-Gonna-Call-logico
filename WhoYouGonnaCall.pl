@@ -1,6 +1,9 @@
 
 %herrameintasRequeridas(Tarea, ListaHerramientas).
 herramientasRequeridas(ordenarCuarto, [aspiradora(100), trapeador, plumero]).
+%herramientasRequeridas(ordenarCuarto, [escoba, trapeador, plumero]).
+%pidiendolo así, queda como que ordenar cuarto necesita TODAS esas herramientas, y no entiende que es una u otra.
+%lo cual modificaría la funcionalidad de mi programa
 herramientasRequeridas(limpiarTecho, [escoba, pala]).
 herramientasRequeridas(cortarPasto, [bordedadora]).
 herramientasRequeridas(limpiarBanio, [sopapa, trapeador]).
@@ -26,6 +29,7 @@ Nadie tiene una bordeadora.
 tiene(egon, aspiradora(200)).
 tiene(egon, trapeador).
 tiene(egon, plumero).
+tiene(egon, sopapa).
 tiene(peter, trapeador).
 tiene(peter, sopapa).
 tiene(wiston, varitaDeNeutrones).
@@ -43,6 +47,10 @@ tieneHerramientaRequerida(Persona, aspiradora(Potencia)):-
     tiene(Persona, aspiradora(OtraPotencia)),
     OtraPotencia >= Potencia.
 
+tieneHerramientaRequerida(Persona, ListaHerramientasReemplazables):-
+    member(Herramienta, ListaHerramientasReemplazables),
+    tieneHerramientaRequerida(Persona, Herramienta)).
+    
 /*Queremos saber si una persona puede realizar una tarea, que dependerá de las herramientas que tenga. Sabemos que:
 - Quien tenga una varita de neutrones puede hacer cualquier tarea, independientemente de qué herramientas requiera dicha tarea.
 - Alternativamente alguien puede hacer una tarea si puede satisfacer la necesidad de todas las herramientas requeridas para dicha tarea.*/
@@ -93,6 +101,40 @@ costoTarea(Cliente, Tarea, Costo):-
     tareaPedida(Cliente, Tarea, MetrosCuadrados),
     precio(Tarea, Precio),
     Costo is Precio * MetrosCuadrados.
+
+/*Finalmente necesitamos saber quiénes aceptarían el pedido de un cliente. Un integrante acepta el pedido cuando puede 
+realizar todas las tareas del pedido y además está dispuesto a aceptarlo.
+Sabemos que Ray sólo acepta pedidos que no incluyan limpiar techos, Winston sólo acepta pedidos que paguen más de $500, 
+Egon está dispuesto a aceptar pedidos que no tengan tareas complejas y Peter está dispuesto a aceptar cualquier pedido.
+Decimos que una tarea es compleja si requiere más de dos herramientas. Además la limpieza de techos siempre es compleja.*/
+
+aceptaPedido(Persona, Cliente):-
+    tareaPedida(Cliente, _,_), %inversible para Cliente
+    tiene(Persona, _), %inversible para la persona
+    forall(tareaPedida(Cliente, Tarea, _), (puedeRealizarTarea(Persona, Tarea), estaDispuestoAHacer(Persona, Tarea))).
+
+estaDispuestoAHacer(ray, Tarea):-
+    Tarea \= limpiarTecho.
+
+estaDispuestoAHacer(wiston, Tarea):-
+    costoTarea(_, Tarea, Costo),
+    Costo > 500.
+
+estaDispuestoAHacer(peter, _).
+
+estaDispuestoAHacer(egon, Tarea):-
+    tareaPedida(_, Tarea, _), %lo utilizamos para ligar Tarea y pueda ser inversible
+    not(tareaCompleja(Tarea)).
+
+tareaCompleja(limpiarTecho).
+
+tareaCompleja(Tarea):-
+    herramientasRequeridas(Tarea, ListaHerramientas),
+    length(ListaHerramientas, TotalDeHerramientas),
+    TotalDeHerramientas > 2.
+
+
+    
 
 
 
